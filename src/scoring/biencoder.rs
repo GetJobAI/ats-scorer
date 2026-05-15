@@ -1,4 +1,4 @@
-use crate::models::SectionVectors;
+use crate::models::{SectionTexts, SectionVectors};
 
 pub enum SectionKind {
     Skill,
@@ -6,15 +6,17 @@ pub enum SectionKind {
 }
 
 pub struct SectionPair {
-    // For simplicity, we only carry vectors here since we don't have text chunks in SectionVectors yet.
-    // In a real implementation we'd map vectors to text chunks if they were chunked.
     pub kind: SectionKind,
     pub cosine_similarity: f32,
+    pub resume_text: String,
+    pub job_text: String,
 }
 
 pub fn biencoder_pairs(
     resume_vectors: &SectionVectors,
     job_vectors: &SectionVectors,
+    resume_texts: &SectionTexts,
+    job_texts: &SectionTexts,
 ) -> Vec<SectionPair> {
     let mut pairs = Vec::new();
 
@@ -23,6 +25,8 @@ pub fn biencoder_pairs(
         pairs.push(SectionPair {
             kind: SectionKind::Skill,
             cosine_similarity: sim,
+            resume_text: resume_texts.skills_text.clone().unwrap_or_default(),
+            job_text: job_texts.skills_text.clone().unwrap_or_default(),
         });
     }
 
@@ -31,10 +35,11 @@ pub fn biencoder_pairs(
         pairs.push(SectionPair {
             kind: SectionKind::Experience,
             cosine_similarity: sim,
+            resume_text: resume_texts.experience_text.clone().unwrap_or_default(),
+            job_text: job_texts.requirements_text.clone().unwrap_or_default(),
         });
     }
 
-    // Sort by cosine similarity descending
     pairs.sort_by(|a, b| b.cosine_similarity.partial_cmp(&a.cosine_similarity).unwrap());
 
     pairs

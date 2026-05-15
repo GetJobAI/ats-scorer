@@ -8,7 +8,7 @@ pub async fn handle_manual(ctx: &AppContext, req: ManualScoreRequest) -> Result<
     let resume_sections = db::queries::fetch_resume_sections(&ctx.db_pool, req.resume_id).await?;
     let job_sections = db::queries::fetch_job_sections(&ctx.db_pool, req.job_id).await?;
 
-    let resume_vectors = vector_store::qdrant::fetch_section_vectors(
+    let (resume_vectors, resume_texts) = vector_store::qdrant::fetch_section_vectors(
         &ctx.qdrant_client,
         &ctx.config.qdrant_collection,
         req.resume_id,
@@ -16,7 +16,7 @@ pub async fn handle_manual(ctx: &AppContext, req: ManualScoreRequest) -> Result<
     .await?
     .ok_or_else(|| anyhow::anyhow!("Vectors not ready for resume_id {}", req.resume_id))?;
 
-    let job_vectors = vector_store::qdrant::fetch_section_vectors(
+    let (job_vectors, job_texts) = vector_store::qdrant::fetch_section_vectors(
         &ctx.qdrant_client,
         &ctx.config.qdrant_collection,
         req.job_id,
@@ -34,6 +34,8 @@ pub async fn handle_manual(ctx: &AppContext, req: ManualScoreRequest) -> Result<
         job_sections,
         resume_vectors,
         job_vectors,
+        resume_texts,
+        job_texts,
         parse_markers,
     };
 

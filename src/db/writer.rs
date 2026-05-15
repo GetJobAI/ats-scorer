@@ -12,7 +12,7 @@ pub async fn upsert_ats_score(pool: &PgPool, result: &ScoreResult) -> Result<Uui
         r#"
         INSERT INTO ats_scores (id, resume_id, job_analysis_id, score, breakdown)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (resume_id, job_analysis_id) 
+        ON CONFLICT (resume_id, job_analysis_id)
         DO UPDATE SET score = EXCLUDED.score, breakdown = EXCLUDED.breakdown
         RETURNING id
         "#

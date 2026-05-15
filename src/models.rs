@@ -20,6 +20,8 @@ pub struct ScoringInput {
     pub job_sections: DocumentSections,
     pub resume_vectors: SectionVectors,
     pub job_vectors: SectionVectors,
+    pub resume_texts: SectionTexts,
+    pub job_texts: SectionTexts,
     pub parse_markers: ParseMarkers,
 }
 
@@ -40,12 +42,22 @@ pub struct SectionVectors {
     pub requirements_vec: Option<Vec<f32>>, // job only
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct SectionTexts {
+    pub full_text: String,
+    pub skills_text: Option<String>,
+    pub experience_text: Option<String>,
+    pub education_text: Option<String>,    // resume only
+    pub requirements_text: Option<String>, // job only
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ParseMarkers {
-    pub has_complex_layout: bool,
-    pub has_graphics: bool,
-    pub has_headers_footers: bool,
-    pub has_non_standard_fonts: bool,
+    pub fallback_used: bool,
+    pub ocr_used: bool,
+    pub partial_parse: bool,
+    pub layout_detected: String,
+    pub warnings: Vec<String>,
 }
 
 // ── Pipeline output (maps 1:1 to the breakdown JSON schema) ─────

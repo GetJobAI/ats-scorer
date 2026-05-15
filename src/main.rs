@@ -28,7 +28,7 @@ pub struct AppContext {
     pub db_pool: sqlx::PgPool,
     pub qdrant_client: Qdrant,
     pub rabbitmq_channel: lapin::Channel,
-    pub reranker: TextRerank,
+    pub reranker: std::sync::Mutex<TextRerank>,
     pub config: Config,
 }
 
@@ -97,7 +97,7 @@ async fn run_serve() -> Result<()> {
         db_pool,
         qdrant_client,
         rabbitmq_channel: rabbitmq_channel.clone(),
-        reranker,
+        reranker: std::sync::Mutex::new(reranker),
         config,
     });
 
@@ -158,7 +158,7 @@ async fn run_single_score(resume_id: uuid::Uuid, job_id: uuid::Uuid) -> Result<(
         db_pool,
         qdrant_client,
         rabbitmq_channel,
-        reranker,
+        reranker: std::sync::Mutex::new(reranker),
         config,
     };
 

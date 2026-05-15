@@ -1,6 +1,6 @@
-use std::collections::HashSet;
 use rust_stemmers::{Algorithm, Stemmer};
-use stop_words::{get, LANGUAGE};
+use std::collections::HashSet;
+use stop_words::{LANGUAGE, get};
 
 use crate::models::{DocumentSections, KeywordDetails, KeywordMatchRate};
 
@@ -13,7 +13,9 @@ pub fn tfidf_score(resume: &DocumentSections, job: &DocumentSections) -> (u8, Ke
             .split_whitespace()
             .map(|s| {
                 // Remove basic punctuation
-                s.chars().filter(|c| c.is_alphanumeric()).collect::<String>()
+                s.chars()
+                    .filter(|c| c.is_alphanumeric())
+                    .collect::<String>()
             })
             .filter(|s| !s.is_empty() && !stop_words.contains(s))
             .map(|s| stemmer.stem(&s).into_owned())
@@ -21,7 +23,7 @@ pub fn tfidf_score(resume: &DocumentSections, job: &DocumentSections) -> (u8, Ke
     };
 
     let resume_tokens = tokenize_and_stem(&resume.full_text);
-    
+
     // We treat job skills and requirements as the target keywords
     let job_text = format!(
         "{} {}",
