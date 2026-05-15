@@ -1,0 +1,101 @@
+use anyhow::Result;
+use lapin::{
+    options::{BasicAckOptions, BasicConsumeOptions, BasicNackOptions, QueueDeclareOptions},
+    types::FieldTable,
+    Channel,
+};
+use std::sync::Arc;
+use tokio_stream::StreamExt;
+use tracing::{error, info, warn};
+
+use crate::handlers::manual::handle_manual;
+use crate::models::ManualScoreRequest;
+use crate::AppContext;
+
+pub async fn start_consumer(
+    channel: Channel,
+    queue_name: &str,
+    ctx: Arc<AppContext>,
+) -> Result<()> {
+    channel
+        .queue_declare(
+            queue_name.into(),
+            QueueDeclareOptions {
+                durable: true,
+                ..Default::default()
+            },
+            FieldTable::default(),
+        )
+        .await?;
+
+    let mut consumer = channel
+        .basic_consume(
+            queue_name.into(),
+            "ats_scorer_consumer".into(),
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+    info!("Started consumer on queue: {}", queue_name);
+
+    while let Some(delivery) = consumer.next().await {
+        let delivery = match delivery {
+            Ok(d) => d,
+            Err(e) => {
+                error!("Error receiving delivery: {}", e);
+                continue;
+            }
+        };
+
+        let payload = match std::str::from_utf8(&delivery.data) {
+            Ok(p) => p,
+            Err(e) => {
+                error!("Failed to parse delivery data as UTF-8: {}", e);
+                let _ = delivery.nack(BasicNackOptions {
+                    requeue: false,
+                    ..Default::default()
+                }).await;
+                continue;
+            }
+        };
+
+        let request: ManualScoreRequest = match serde_json::from_str(payload) {
+            Ok(req) => req,
+            Err(e) => {
+                error!("Failed to deserialize request: {}", e);
+                let _ = delivery.nack(BasicNackOptions {
+                    requeue: false,
+                    ..Default::default()
+                }).await;
+                continue;
+            }
+        };
+
+        match handle_manual(&ctx, request).await {
+            Ok(_) => {
+                if let Err(e) = delivery.ack(BasicAckOptions::default()).await {
+                    error!("Failed to ack message: {}", e);
+                }
+            }
+            Err(e) => {
+                let msg = e.to_string();
+                if msg.contains("Vectors not ready") {
+                    warn!("Vectors not ready, nacking without requeue: {}", e);
+                    let _ = delivery.nack(BasicNackOptions {
+                        requeue: false,
+                        ..Default::default()
+                    }).await;
+                } else {
+                    error!("Handler failed, requeuing: {}", e);
+                    let _ = delivery.nack(BasicNackOptions {
+                        requeue: true,
+                        ..Default::default()
+                    }).await;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
