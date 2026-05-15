@@ -3,21 +3,18 @@ use crate::models::{FormatParseability, ParseMarkers};
 pub fn parseability_score(markers: &ParseMarkers) -> FormatParseability {
     let mut score: i16 = 20;
 
-    if markers.fallback_used {
+    if markers.has_complex_layout {
         score -= 5;
     }
-    if markers.ocr_used {
+    if markers.has_graphics {
+        score -= 5;
+    }
+    if markers.has_headers_footers {
         score -= 3;
     }
-    if markers.partial_parse {
+    if markers.has_non_standard_fonts {
         score -= 7;
     }
-    if markers.layout_detected != "single_column" {
-        score -= 5;
-    }
-    
-    let warning_penalty = (markers.warnings.len() as i16 * 2).min(6);
-    score -= warning_penalty;
 
     let earned = score.max(0) as u8;
 

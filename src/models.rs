@@ -53,11 +53,10 @@ pub struct SectionTexts {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ParseMarkers {
-    pub fallback_used: bool,
-    pub ocr_used: bool,
-    pub partial_parse: bool,
-    pub layout_detected: String,
-    pub warnings: Vec<String>,
+    pub has_complex_layout: bool,
+    pub has_graphics: bool,
+    pub has_headers_footers: bool,
+    pub has_non_standard_fonts: bool,
 }
 
 // ── Pipeline output (maps 1:1 to the breakdown JSON schema) ─────

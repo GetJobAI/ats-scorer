@@ -97,39 +97,12 @@ pub async fn fetch_parse_markers(pool: &PgPool, resume_id: Uuid) -> Result<Parse
     let meta: Option<serde_json::Value> = record.get("meta");
     let meta = meta.unwrap_or_else(|| serde_json::json!({}));
 
-    let fallback_used = meta
-        .get("fallback_used")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let ocr_used = meta
-        .get("ocr_used")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let partial_parse = meta
-        .get("partial_parse")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let layout_detected = meta
-        .get("layout_detected")
-        .and_then(|v| v.as_str())
-        .unwrap_or("single_column")
-        .to_string();
-
-    let warnings = meta
-        .get("warnings")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|w| w.as_str().map(|s| s.to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
+    let bool_flag = |key: &str| meta.get(key).and_then(|v| v.as_bool()).unwrap_or(false);
 
     Ok(ParseMarkers {
-        fallback_used,
-        ocr_used,
-        partial_parse,
-        layout_detected,
-        warnings,
+        has_complex_layout: bool_flag("has_complex_layout"),
+        has_graphics: bool_flag("has_graphics"),
+        has_headers_footers: bool_flag("has_headers_footers"),
+        has_non_standard_fonts: bool_flag("has_non_standard_fonts"),
     })
 }
