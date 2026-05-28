@@ -1,8 +1,11 @@
 use anyhow::Result;
 use lapin::{
-    options::{BasicAckOptions, BasicConsumeOptions, BasicNackOptions, QueueDeclareOptions},
+    Channel, ExchangeKind,
+    options::{
+        BasicAckOptions, BasicConsumeOptions, BasicNackOptions, ExchangeDeclareOptions,
+        QueueBindOptions, QueueDeclareOptions,
+    },
     types::FieldTable,
-    Channel,
 };
 use std::sync::Arc;
 use tokio_stream::StreamExt;
@@ -14,9 +17,23 @@ use crate::AppContext;
 
 pub async fn start_consumer(
     channel: Channel,
+    exchange_name: &str,
     queue_name: &str,
+    routing_key: &str,
     ctx: Arc<AppContext>,
 ) -> Result<()> {
+    channel
+        .exchange_declare(
+            exchange_name.into(),
+            ExchangeKind::Topic,
+            ExchangeDeclareOptions {
+                durable: true,
+                ..Default::default()
+            },
+            FieldTable::default(),
+        )
+        .await?;
+
     channel
         .queue_declare(
             queue_name.into(),
@@ -24,6 +41,16 @@ pub async fn start_consumer(
                 durable: true,
                 ..Default::default()
             },
+            FieldTable::default(),
+        )
+        .await?;
+
+    channel
+        .queue_bind(
+            queue_name.into(),
+            exchange_name.into(),
+            routing_key.into(),
+            QueueBindOptions::default(),
             FieldTable::default(),
         )
         .await?;
@@ -37,7 +64,12 @@ pub async fn start_consumer(
         )
         .await?;
 
-    info!("Started consumer on queue: {}", queue_name);
+    info!(
+        exchange = exchange_name,
+        queue = queue_name,
+        routing_key = routing_key,
+        "Started consumer"
+    );
 
     while let Some(delivery) = consumer.next().await {
         let delivery = match delivery {
@@ -52,10 +84,12 @@ pub async fn start_consumer(
             Ok(p) => p,
             Err(e) => {
                 error!("Failed to parse delivery data as UTF-8: {}", e);
-                let _ = delivery.nack(BasicNackOptions {
-                    requeue: false,
-                    ..Default::default()
-                }).await;
+                let _ = delivery
+                    .nack(BasicNackOptions {
+                        requeue: false,
+                        ..Default::default()
+                    })
+                    .await;
                 continue;
             }
         };
@@ -64,10 +98,12 @@ pub async fn start_consumer(
             Ok(req) => req,
             Err(e) => {
                 error!("Failed to deserialize request: {}", e);
-                let _ = delivery.nack(BasicNackOptions {
-                    requeue: false,
-                    ..Default::default()
-                }).await;
+                let _ = delivery
+                    .nack(BasicNackOptions {
+                        requeue: false,
+                        ..Default::default()
+                    })
+                    .await;
                 continue;
             }
         };
@@ -82,16 +118,20 @@ pub async fn start_consumer(
                 let msg = e.to_string();
                 if msg.contains("Vectors not ready") {
                     warn!("Vectors not ready, nacking without requeue: {}", e);
-                    let _ = delivery.nack(BasicNackOptions {
-                        requeue: false,
-                        ..Default::default()
-                    }).await;
+                    let _ = delivery
+                        .nack(BasicNackOptions {
+                            requeue: false,
+                            ..Default::default()
+                        })
+                        .await;
                 } else {
                     error!("Handler failed, requeuing: {}", e);
-                    let _ = delivery.nack(BasicNackOptions {
-                        requeue: true,
-                        ..Default::default()
-                    }).await;
+                    let _ = delivery
+                        .nack(BasicNackOptions {
+                            requeue: true,
+                            ..Default::default()
+                        })
+                        .await;
                 }
             }
         }

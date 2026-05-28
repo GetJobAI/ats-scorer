@@ -8,6 +8,8 @@ pub struct Config {
     pub qdrant_collection: String,
 
     pub rabbitmq_url: String,
+    pub rabbitmq_consume_exchange: String,
+    pub rabbitmq_consume_routing_key: String,
     pub rabbitmq_consume_queue: String,
     pub rabbitmq_publish_exchange: String,
 

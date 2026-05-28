@@ -101,12 +101,20 @@ async fn run_serve() -> Result<()> {
         config,
     });
 
-    let queue_name = app_context.config.rabbitmq_consume_queue.clone();
+    let consume_exchange = app_context.config.rabbitmq_consume_exchange.clone();
+    let consume_queue = app_context.config.rabbitmq_consume_queue.clone();
+    let consume_routing_key = app_context.config.rabbitmq_consume_routing_key.clone();
 
     info!("Starting consumer...");
     let consumer_task = tokio::spawn(async move {
-        if let Err(e) =
-            queue::consumer::start_consumer(rabbitmq_channel, &queue_name, app_context).await
+        if let Err(e) = queue::consumer::start_consumer(
+            rabbitmq_channel,
+            &consume_exchange,
+            &consume_queue,
+            &consume_routing_key,
+            app_context,
+        )
+        .await
         {
             error!("Consumer error: {}", e);
         }
