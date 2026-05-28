@@ -88,6 +88,20 @@ pub async fn fetch_job_sections(pool: &PgPool, job_id: Uuid) -> Result<DocumentS
     })
 }
 
+pub async fn fetch_job_metadata(pool: &PgPool, job_id: Uuid) -> Result<(String, String)> {
+    let record = sqlx::query(
+        "SELECT content->>'title' AS title, content->>'company' AS company FROM job_postings WHERE id = $1"
+    )
+    .bind(job_id)
+    .fetch_one(pool)
+    .await?;
+
+    let title: Option<String> = record.get("title");
+    let company: Option<String> = record.get("company");
+
+    Ok((title.unwrap_or_default(), company.unwrap_or_default()))
+}
+
 pub async fn fetch_parse_markers(pool: &PgPool, resume_id: Uuid) -> Result<ParseMarkers> {
     let record = sqlx::query("SELECT content->'meta' as meta FROM resumes WHERE id = $1")
         .bind(resume_id)

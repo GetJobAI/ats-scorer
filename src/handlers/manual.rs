@@ -41,18 +41,20 @@ pub async fn handle_manual(ctx: &AppContext, req: ManualScoreRequest) -> Result<
 
     let score_result = scoring::pipeline::run_pipeline(&ctx.reranker, scoring_input).await?;
 
-    let ats_score_id = db::writer::upsert_ats_score(&ctx.db_pool, &score_result).await?;
+    let (job_title, company_name) = db::queries::fetch_job_metadata(&ctx.db_pool, req.job_id).await?;
+
+    db::writer::upsert_ats_score(&ctx.db_pool, &score_result).await?;
 
     publish_score_ready(
         &ctx.rabbitmq_channel,
         &ctx.config.rabbitmq_publish_exchange,
-        &ctx.config.rabbitmq_publish_routing_key,
         AtsScoreReadyEvent {
-            ats_score_id,
             resume_id: req.resume_id,
             job_id: req.job_id,
-            user_id: req.user_id,
+            job_title,
+            company_name,
             total_score: score_result.total_score,
+            breakdown: score_result.breakdown,
         },
     )
     .await?;

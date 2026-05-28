@@ -10,7 +10,6 @@ pub struct Config {
     pub rabbitmq_url: String,
     pub rabbitmq_consume_queue: String,
     pub rabbitmq_publish_exchange: String,
-    pub rabbitmq_publish_routing_key: String,
 
     pub tfidf_top_k: usize,
     pub reranker_top_k: usize,

@@ -93,6 +93,7 @@ pub struct KeywordMatchRate {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct KeywordDetails {
+    #[serde(rename = "match")]
     pub matched: Vec<String>,
     pub partial: Vec<String>,
     pub missing: Vec<String>,
@@ -145,11 +146,14 @@ pub struct FormatParseability {
 
 // ── Outbound event ───────────────────────────────────────────────
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct AtsScoreReadyEvent {
-    pub ats_score_id: Uuid,
     pub resume_id: Uuid,
+    #[serde(rename = "job_analysis_id")]
     pub job_id: Uuid,
-    pub user_id: Uuid,
+    pub job_title: String,
+    pub company_name: String,
+    #[serde(rename = "score")]
     pub total_score: u8,
+    pub breakdown: Breakdown,
 }
