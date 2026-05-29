@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct ManualScoreRequest {
     pub resume_id: Uuid,
     pub job_id: Uuid,
-    pub user_id: Uuid,
+    pub user_id: String,
 }
 
 // ── Internal pipeline types ──────────────────────────────────────
@@ -15,7 +15,7 @@ pub struct ManualScoreRequest {
 pub struct ScoringInput {
     pub resume_id: Uuid,
     pub job_id: Uuid,
-    pub user_id: Uuid,
+    pub user_id: String,
     pub resume_sections: DocumentSections,
     pub job_sections: DocumentSections,
     pub resume_vectors: SectionVectors,
@@ -65,7 +65,7 @@ pub struct ParseMarkers {
 pub struct ScoreResult {
     pub resume_id: Uuid,
     pub job_id: Uuid,
-    pub user_id: Uuid,
+    pub user_id: String,
     pub total_score: u8,
     pub breakdown: Breakdown,
 }

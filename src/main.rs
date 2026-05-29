@@ -173,7 +173,7 @@ async fn run_single_score(resume_id: uuid::Uuid, job_id: uuid::Uuid) -> Result<(
     let req = models::ManualScoreRequest {
         resume_id,
         job_id,
-        user_id: uuid::Uuid::nil(), // dummy user id for CLI trigger
+        user_id: String::new(), // dummy user id for CLI trigger
     };
 
     handlers::manual::handle_manual(&ctx, req).await?;
