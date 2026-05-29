@@ -6,6 +6,7 @@ pub struct Config {
 
     pub qdrant_url: String,
     pub qdrant_collection: String,
+    pub qdrant_api_key: String,
 
     pub rabbitmq_url: String,
     pub rabbitmq_consume_exchange: String,

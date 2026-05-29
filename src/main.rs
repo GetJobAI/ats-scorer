@@ -73,7 +73,7 @@ async fn run_serve() -> Result<()> {
     .context("Failed to connect to PostgreSQL")?;
 
     info!("Connecting to Qdrant...");
-    let qdrant_client = Qdrant::from_url(&config.qdrant_url).build()?;
+    let qdrant_client = Qdrant::from_url(&config.qdrant_url).api_key(config.qdrant_api_key.clone()).build()?;
     Retry::spawn(retry_strategy.clone(), || async {
         qdrant_client.health_check().await
     })
@@ -153,7 +153,7 @@ async fn run_single_score(resume_id: uuid::Uuid, job_id: uuid::Uuid) -> Result<(
         .await
         .context("Failed to connect to PostgreSQL")?;
 
-    let qdrant_client = Qdrant::from_url(&config.qdrant_url).build()?;
+    let qdrant_client = Qdrant::from_url(&config.qdrant_url).api_key(config.qdrant_api_key.clone()).build()?;
 
     let rmq_conn = Connection::connect(&config.rabbitmq_url, ConnectionProperties::default())
         .await
