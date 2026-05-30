@@ -1,4 +1,5 @@
 use anyhow::Result;
+use tracing::info;
 
 use crate::models::{AtsScoreReadyEvent, ManualScoreRequest, ScoringInput};
 use crate::queue::publisher::publish_score_ready;
@@ -44,6 +45,13 @@ pub async fn handle_manual(ctx: &AppContext, req: ManualScoreRequest) -> Result<
     let (job_title, company_name) = db::queries::fetch_job_metadata(&ctx.db_pool, req.job_id).await?;
 
     db::writer::upsert_ats_score(&ctx.db_pool, &score_result).await?;
+
+    info!(
+        resume_id = %req.resume_id,
+        job_id = %req.job_id,
+        score = score_result.total_score,
+        "ATS score computed and saved"
+    );
 
     publish_score_ready(
         &ctx.rabbitmq_channel,
