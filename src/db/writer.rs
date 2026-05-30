@@ -10,10 +10,10 @@ pub async fn upsert_ats_score(pool: &PgPool, result: &ScoreResult) -> Result<Uui
 
     let record = sqlx::query(
         r#"
-        INSERT INTO ats_scores (id, resume_id, job_analysis_id, score, breakdown)
+        INSERT INTO ats_scores (id, resume_id, job_posting_id, score, analysis)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (resume_id, job_analysis_id)
-        DO UPDATE SET score = EXCLUDED.score, breakdown = EXCLUDED.breakdown
+        ON CONFLICT (resume_id, job_posting_id)
+        DO UPDATE SET score = EXCLUDED.score, analysis = EXCLUDED.analysis
         RETURNING id
         "#
     )
