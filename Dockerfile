@@ -7,18 +7,19 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 # Install before any COPY so this layer is never invalidated by source changes
-RUN apt-get update && apt-get install -y pkg-config libssl-dev cmake lld g++ \
+RUN apt-get update && apt-get install -y pkg-config libssl-dev cmake mold g++ \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=planner /app/recipe.json recipe.json
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
+RUN --mount=type=cache,target=/usr/local/cargo/registry,id=cargo-registry \
+    --mount=type=cache,target=/app/target,id=ats-scorer-target \
+    RUSTFLAGS="-C link-arg=-fuse-ld=mold" \
     cargo chef cook --release --recipe-path recipe.json
 
 COPY . .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    RUSTFLAGS="-C link-arg=-fuse-ld=lld" \
+RUN --mount=type=cache,target=/usr/local/cargo/registry,id=cargo-registry \
+    --mount=type=cache,target=/app/target,id=ats-scorer-target \
+    RUSTFLAGS="-C link-arg=-fuse-ld=mold" \
     cargo build --release --bin ats-scorer \
     && cp /app/target/release/ats-scorer /app/ats-scorer-bin
 
