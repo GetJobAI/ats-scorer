@@ -117,10 +117,11 @@ pub async fn start_consumer(
             Err(e) => {
                 let msg = e.to_string();
                 if msg.contains("Vectors not ready") {
-                    warn!("Vectors not ready, nacking without requeue: {}", e);
+                    warn!(error = %e, "Vectors not ready, requeueing after delay");
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                     let _ = delivery
                         .nack(BasicNackOptions {
-                            requeue: false,
+                            requeue: true,
                             ..Default::default()
                         })
                         .await;
